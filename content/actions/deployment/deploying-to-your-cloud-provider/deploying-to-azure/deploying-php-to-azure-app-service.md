@@ -19,11 +19,11 @@ topics:
 
 This guide explains how to use {% data variables.product.prodname_actions %} to build and deploy a PHP project to [Azure App Service](https://azure.microsoft.com/services/app-service/).
 
-{% ifversion fpt or ghec or ghae-issue-4856 or ghes > 3.4 %}
+{% ifversion fpt or ghec or ghes > 3.4 %}
 
 {% note %}
 
-**Note**: {% data reusables.actions.about-oidc-short-overview %} and "[Configuring OpenID Connect in Azure](/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-azure)."
+**Note**: {% data reusables.actions.about-oidc-short-overview %} and "[AUTOTITLE](/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-azure)."
 
 {% endnote %}
 
@@ -102,7 +102,11 @@ jobs:
         id: composer-cache
         if: steps.check_files.outputs.files_exists == 'true'
         run: |
+{%- ifversion actions-save-state-set-output-envs %}
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+{%- else %}
           echo "::set-output name=dir::$(composer config cache-files-dir)"
+{%- endif %}
 
       - name: Set up dependency caching for faster installs
         uses: {% data reusables.actions.action-cache %}

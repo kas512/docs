@@ -1,10 +1,9 @@
 ---
-title: 'Converting draft issues to issues'
-shortTitle: 'Converting draft issues'
-intro: 'Learn how to convert draft issues into issues.'
-miniTocMaxHeadingLevel: 3
+title: Converting draft issues to issues
+shortTitle: Converting draft issues
+intro: Learn how to convert draft issues into issues.
 versions:
-  feature: "projects-v2"
+  feature: projects-v2
 type: tutorial
 topics:
   - Projects
@@ -30,4 +29,4 @@ topics:
 
 ## Further reading
 
-- "[Creating draft issues](/issues/planning-and-tracking-with-projects/managing-items-in-your-project/adding-items-to-your-project#creating-draft-issues)"
+- "[AUTOTITLE](/issues/planning-and-tracking-with-projects/managing-items-in-your-project/adding-items-to-your-project#creating-draft-issues)"

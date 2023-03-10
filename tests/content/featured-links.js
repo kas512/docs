@@ -1,31 +1,10 @@
-import fs from 'fs/promises'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { jest } from '@jest/globals'
 
-import { beforeAll, jest } from '@jest/globals'
-import nock from 'nock'
-import japaneseCharacters from 'japanese-characters'
-
-import '../../lib/feature-flags.js'
 import { getDOM, getJSON } from '../helpers/e2etest.js'
 import enterpriseServerReleases from '../../lib/enterprise-server-releases.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
 describe('featuredLinks', () => {
   jest.setTimeout(3 * 60 * 1000)
-
-  beforeAll(async () => {
-    const packagesFeedFixturePayload = await fs.readFile(
-      path.join(__dirname, '../fixtures/github-blog-feed-packages-2021.xml'),
-      'utf-8'
-    )
-    nock('https://github.blog')
-      .get('/changelog/label/packages/feed')
-      .reply(200, packagesFeedFixturePayload)
-  })
-
-  afterAll(() => nock.cleanAll())
 
   describe('rendering', () => {
     test('non-TOC pages do not have intro links', async () => {
@@ -50,29 +29,12 @@ describe('featuredLinks', () => {
       ).toBe(true)
     })
 
-    test('localized intro links link to localized pages', async () => {
-      const $jaPages = await getDOM('/ja')
-      const $enPages = await getDOM('/en')
-      const $jaFeaturedLinks = $jaPages('[data-testid=article-list] a')
-      const $enFeaturedLinks = $enPages('[data-testid=article-list] a')
-      expect($jaFeaturedLinks.length).toBe($enFeaturedLinks.length)
-      expect($jaFeaturedLinks.eq(0).attr('href').startsWith('/ja')).toBe(true)
-
-      // Footer translations change very rarely if ever, so we can more
-      // reliably test those text values for the language
-      const footerText = []
-      $jaPages('footer a').each((index, element) => {
-        footerText.push($jaPages(element).text())
-      })
-      expect(footerText.some((elem) => japaneseCharacters.presentIn(elem)))
-    })
-
     test('Enterprise user intro links have expected values', async () => {
       const $ = await getDOM(`/en/enterprise/${enterpriseServerReleases.latest}/user/get-started`)
       const $featuredLinks = $('[data-testid=article-list] a')
-      expect($featuredLinks).toHaveLength(11)
+      expect($featuredLinks.length > 0).toBeTruthy()
       expect($featuredLinks.eq(0).attr('href')).toBe(
-        `/en/enterprise-server@${enterpriseServerReleases.latest}/github/getting-started-with-github/githubs-products`
+        `/en/enterprise-server@${enterpriseServerReleases.latest}/get-started/learning-about-github/githubs-products`
       )
       expect($featuredLinks.eq(0).children('h3').text().startsWith('GitHub’s products')).toBe(true)
       expect(

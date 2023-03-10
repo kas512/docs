@@ -50,7 +50,7 @@ describe('search parsePageSectionsIntoRecords module', () => {
         'Table heading\nPeter\nHuman\n' +
         'Bullet\nPoint\nNumbered\nList\n' +
         "Further reading\nThis won't be ignored.",
-      topics: ['topic1', 'topic2', 'GitHub Actions', 'Actions'],
+      intro: 'This is an introduction to the article.',
     }
 
     expect(record).toEqual(expected)
@@ -67,7 +67,7 @@ describe('search parsePageSectionsIntoRecords module', () => {
       title: 'A page without sections',
       headings: '',
       content: 'This is an introduction to the article.\nFirst paragraph.\nSecond paragraph.',
-      topics: ['key1', 'key2', 'key3', 'Education'],
+      intro: 'This is an introduction to the article.',
     }
 
     expect(record).toEqual(expected)
@@ -84,7 +84,7 @@ describe('search parsePageSectionsIntoRecords module', () => {
       title: 'A page without body',
       headings: '',
       content: 'This is an introduction to the article.',
-      topics: ['key1', 'key2', 'key3', 'Education'],
+      intro: 'This is an introduction to the article.',
     }
 
     expect(record).toEqual(expected)
@@ -119,5 +119,7 @@ describe('search parsePageSectionsIntoRecords module', () => {
     // But note also that it would also concatenate the text of the heading
     // with the text of the paragraph without a whitespace in between.
     expect(record.content.includes('email addressYou can set')).toBeFalsy()
+    // Make sure that inline elements are still together.
+    expect(record.content).toMatch(/Paragraph\./)
   })
 })

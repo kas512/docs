@@ -2,9 +2,8 @@
 title: 'Closing and deleting your {% data variables.projects.projects_v2 %}'
 shortTitle: 'Closing and deleting {% data variables.projects.projects_v2 %}'
 intro: 'Learn about closing, re-opening, and permanently deleting a {% data variables.projects.project_v2 %}.'
-miniTocMaxHeadingLevel: 3
 versions:
-  feature: "projects-v2"
+  feature: projects-v2
 redirect_from:
   - /issues/trying-out-the-new-projects-experience/managing-projects
 type: tutorial

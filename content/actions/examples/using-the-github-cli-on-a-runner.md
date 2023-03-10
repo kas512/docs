@@ -1,6 +1,6 @@
 ---
 title: Using the GitHub CLI on a runner
-shortTitle: Using the GitHub CLI on a runner
+shortTitle: Use the GitHub CLI on a runner
 intro: 'How to use advanced {% data variables.product.prodname_actions %} features for continuous integration (CI).'
 versions:
   fpt: '*'
@@ -43,7 +43,7 @@ topics:
 
 ## Example workflow
 
-{% data reusables.actions.example-docs-engineering-intro %} [`check-all-english-links.yml`](https://github.com/github/docs/blob/main/.github/workflows/check-all-english-links.yml).
+{% data reusables.actions.example-docs-engineering-intro %} [`check-all-english-links.yml`](https://github.com/github/docs/blob/6e01c0653836c10d7e092a17566a2c88b10504ce/.github/workflows/check-all-english-links.yml).
 
 {% data reusables.actions.note-understanding-example %}
 
@@ -109,7 +109,11 @@ jobs:
       - if: {% raw %}${{ failure() }}{% endraw %}
         name: Get title for issue
         id: check
+{%- ifversion actions-save-state-set-output-envs %}
+        run: echo "title=$(head -1 broken_links.md)" >> $GITHUB_OUTPUT
+{%- else %}
         run: echo "::set-output name=title::$(head -1 broken_links.md)"
+{%- endif %}
       - if: {% raw %}${{ failure() }}{% endraw %}
         name: Create issue from file
         id: broken-link-report
@@ -213,7 +217,7 @@ on:
 Defines the `workflow_dispatch` and `scheduled` as triggers for the workflow:
 
 * The `workflow_dispatch` lets you manually run this workflow from the UI. For more information, see [`workflow_dispatch`](/actions/using-workflows/events-that-trigger-workflows#workflow_dispatch).
-* The `schedule` event lets you use `cron` syntax to define a regular interval for automatically triggering the workflow. For more information, see [`schedule`](/actions/reference/events-that-trigger-workflows#schedule).
+* The `schedule` event lets you use `cron` syntax to define a regular interval for automatically triggering the workflow. For more information, see [`schedule`](/actions/using-workflows/events-that-trigger-workflows#schedule).
 </td>
 </tr>
 <tr>
@@ -227,7 +231,7 @@ permissions:
 </td>
 <td>
 
-Modifies the default permissions granted to `GITHUB_TOKEN`. This will vary depending on the needs of your workflow. For more information, see "[Assigning permissions to jobs](/actions/using-jobs/assigning-permissions-to-jobs)."
+Modifies the default permissions granted to `GITHUB_TOKEN`. This will vary depending on the needs of your workflow. For more information, see "[AUTOTITLE](/actions/using-jobs/assigning-permissions-to-jobs)."
 </td>
 </tr>
 <tr>
@@ -276,7 +280,7 @@ runs-on: ubuntu-latest
 </td>
 <td>
 
-Configures the job to run on an Ubuntu Linux runner. This means that the job will execute on a fresh virtual machine hosted by {% data variables.product.prodname_dotcom %}. For syntax examples using other runners, see "[Workflow syntax for {% data variables.product.prodname_actions %}](/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on)."
+Configures the job to run on an Ubuntu Linux runner. This means that the job will execute on a fresh virtual machine hosted by {% data variables.product.prodname_dotcom %}. For syntax examples using other runners, see "[AUTOTITLE](/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idruns-on)."
 </td>
 </tr>
 <tr>
@@ -372,7 +376,11 @@ This `run` command executes a script that is stored in the repository at `script
       - if: {% raw %}${{ failure() }}{% endraw %}
         name: Get title for issue
         id: check
+{%- ifversion actions-save-state-set-output-envs %}
+        run: echo "title=$(head -1 broken_links.md)" >> $GITHUB_OUTPUT
+{%- else %}
         run: echo "::set-output name=title::$(head -1 broken_links.md)"
+{%- endif %}
 ```
 </td>
 <td>

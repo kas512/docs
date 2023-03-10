@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import App from 'next/app'
 import type { AppProps, AppContext } from 'next/app'
 import Head from 'next/head'
@@ -7,9 +7,12 @@ import { ThemeProvider, SSRProvider } from '@primer/react'
 import '../stylesheets/index.scss'
 
 import { initializeEvents } from 'components/lib/events'
-import experiment from 'components/lib/experiment'
-import { LanguagesContext, LanguagesContextT } from 'components/context/LanguagesContext'
-import { useSession } from 'components/hooks/useSession'
+import { initializeExperiments } from 'components/lib/experiment'
+import {
+  LanguagesContext,
+  LanguagesContextT,
+  LanguageItem,
+} from 'components/context/LanguagesContext'
 import { useTheme } from 'components/hooks/useTheme'
 
 type MyAppProps = AppProps & {
@@ -18,15 +21,43 @@ type MyAppProps = AppProps & {
 }
 
 const MyApp = ({ Component, pageProps, languagesContext }: MyAppProps) => {
-  const { session } = useSession()
   const { theme } = useTheme()
 
   useEffect(() => {
-    if (session?.csrfToken) {
-      initializeEvents(session.csrfToken)
+    initializeEvents()
+    initializeExperiments()
+  }, [])
+
+  useEffect(() => {
+    // The CSS from primer looks something like this:
+    //
+    //   @media (prefers-color-scheme: dark) [data-color-mode=auto][data-dark-theme=dark] {
+    //       --color-canvas-default: black;
+    //   }
+    //   body {
+    //       background-color: var(--color-canvas-default);
+    //   }
+    //
+    // So if that `[data-color-mode][data-dark-theme=dark]` isn't present
+    // on the body, but on a top-level wrapping `<div>` then the `<body>`
+    // doesn't get the right CSS.
+    // Normally, with Primer you make sure you set these things in the
+    // `<body>` tag and you can use `_document.tsx` for that but that's
+    // only something you can do in server-side rendering. So,
+    // we use a hook to assure that the `<body>` tag has the correct
+    // dataset attribute values.
+    const body = document.querySelector('body')
+    if (body) {
+      // Note, this is the same as setting `<body data-color-mode="...">`
+      // But you can't do `body.dataset['color-mode']` so you use the
+      // camelCase variant and you get the same effect.
+      // Appears Next.js can't modify <body> after server rendering:
+      // https://stackoverflow.com/a/54774431
+      body.dataset.colorMode = theme.css.colorMode
+      body.dataset.darkTheme = theme.css.darkTheme
+      body.dataset.lightTheme = theme.css.lightTheme
     }
-    experiment()
-  }, [session])
+  }, [theme])
 
   return (
     <>
@@ -60,16 +91,9 @@ const MyApp = ({ Component, pageProps, languagesContext }: MyAppProps) => {
           nightScheme={theme.component.nightScheme}
           preventSSRMismatch
         >
-          {/* Appears Next.js can't modify <body> after server rendering: https://stackoverflow.com/a/54774431 */}
-          <div
-            data-color-mode={theme.css.colorMode}
-            data-light-theme={theme.css.lightTheme}
-            data-dark-theme={theme.css.darkTheme}
-          >
-            <LanguagesContext.Provider value={languagesContext}>
-              <Component {...pageProps} />
-            </LanguagesContext.Provider>
-          </div>
+          <LanguagesContext.Provider value={languagesContext}>
+            <Component {...pageProps} />
+          </LanguagesContext.Provider>
         </ThemeProvider>
       </SSRProvider>
     </>
@@ -84,11 +108,32 @@ MyApp.getInitialProps = async (appContext: AppContext) => {
 
   // Have to define the type manually here because `req.context.languages`
   // comes from Node JS and is not type-aware.
-  const languages: LanguagesContextT = req.context.languages
+  const languagesContext: LanguagesContextT = {
+    languages: {},
+  }
+
+  // If we're rendering certain 404 error pages, the middleware might not
+  // yet have contextualized the `context.languages`. So omit this
+  // context mutation and live without it.
+  if (req.context.languages) {
+    for (const [langCode, langObj] of Object.entries(
+      req.context.languages as Record<string, LanguageItem>
+    )) {
+      if (langObj.wip) continue
+      // Only pick out the keys we actually need
+      languagesContext.languages[langCode] = {
+        name: langObj.name,
+        code: langObj.code,
+      }
+      if (langObj.nativeName) {
+        languagesContext.languages[langCode].nativeName = langObj.nativeName
+      }
+    }
+  }
 
   return {
     ...appProps,
-    languagesContext: { languages },
+    languagesContext,
   }
 }
 

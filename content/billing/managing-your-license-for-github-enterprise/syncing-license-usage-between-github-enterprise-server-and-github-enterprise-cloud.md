@@ -22,6 +22,8 @@ To ensure that you see up-to-date license details on {% data variables.product.p
 
 If you don't want to enable {% data variables.product.prodname_github_connect %}, you can manually sync license usage by uploading a file from {% data variables.product.prodname_ghe_server %} to {% data variables.product.prodname_dotcom_the_website %}.
 
+When you synchronize license usage, only the user ID and email addresses for each user account on {% data variables.product.prodname_ghe_server %} are transmitted to {% data variables.product.prodname_ghe_cloud %}.
+
 {% data reusables.enterprise-licensing.view-consumed-licenses %}
 
 {% data reusables.enterprise-licensing.verified-domains-license-sync %}
@@ -56,7 +58,5 @@ You can download a JSON file from {% data variables.product.prodname_ghe_server 
 {% data reusables.enterprise-accounts.access-enterprise-on-dotcom %}
 {% data reusables.enterprise-accounts.settings-tab %}
 {% data reusables.enterprise-accounts.license-tab %}
-10. Under "Enterprise Server Instances", click **Add server usage**.
-  ![Upload GitHub Enterprise Servers usage link](/assets/images/help/business-accounts/upload-ghe-server-usage-link.png)
+10. Next to "Enterprise Server instances", click **Add server usage**.
 11. Upload the JSON file you downloaded from {% data variables.product.prodname_ghe_server %}.
-  ![Drag and drop or select a file to upload](/assets/images/help/business-accounts/upload-ghe-server-usage-file.png)

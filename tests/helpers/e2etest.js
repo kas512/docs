@@ -10,7 +10,7 @@ export async function get(
     followRedirects: false,
     followAllRedirects: false,
     headers: {},
-    cookieJar: undefined,
+    responseType: undefined,
   }
 ) {
   const method = opts.method || 'get'
@@ -22,9 +22,9 @@ export async function get(
       body: opts.body,
       headers: opts.headers,
       retry: { limit: 0 },
-      cookieJar: opts.cookieJar,
       throwHttpErrors: false,
       followRedirect: opts.followAllRedirects || opts.followRedirects,
+      responseType: opts.responseType,
     },
     isUndefined
   )
@@ -60,16 +60,25 @@ export function post(route, opts) {
   return get(route, Object.assign({}, opts, { method: 'post' }))
 }
 
+const getDOMCache = new Map()
+
+export async function getDOMCached(route, options) {
+  const cacheKey = `${route}:${options ? JSON.stringify(options) : ''}`
+  if (!getDOMCache.has(cacheKey)) {
+    getDOMCache.set(cacheKey, getDOM(route, options))
+  }
+  return getDOMCache.get(cacheKey)
+}
+
 export async function getDOM(
   route,
-  { headers, allow500s, allow404, cookieJar } = {
+  { headers, allow500s, allow404 } = {
     headers: undefined,
     allow500s: false,
     allow404: false,
-    cookieJar: undefined,
   }
 ) {
-  const res = await get(route, { followRedirects: true, headers, cookieJar })
+  const res = await get(route, { followRedirects: true, headers })
   if (!allow500s && res.status >= 500) {
     throw new Error(`Server error (${res.status}) on ${route}`)
   }

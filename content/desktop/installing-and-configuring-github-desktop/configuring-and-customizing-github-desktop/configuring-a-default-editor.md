@@ -14,7 +14,6 @@ shortTitle: Configure default editor
 
 {% mac %}
 
-- [Atom](https://atom.io/)
 - [MacVim](https://macvim-dev.github.io/macvim/)
 - [{% data variables.product.prodname_vscode %}](https://code.visualstudio.com/)
 - [Visual Studio Codium](https://vscodium.com/)
@@ -43,7 +42,6 @@ shortTitle: Configure default editor
 
 {% windows %}
 
-- [Atom](https://atom.io/)
 - [{% data variables.product.prodname_vscode %}](https://code.visualstudio.com/)
 - [Visual Studio Codium](https://vscodium.com/)
 - [Sublime Text](https://www.sublimetext.com/)
@@ -72,9 +70,8 @@ shortTitle: Configure default editor
 
 {% data reusables.desktop.mac-select-desktop-menu %}
 3. In the Preferences window, select **Integrations**.
-  ![The Integrations pane in the Preferences window](/assets/images/help/desktop/mac-select-integrations-pane.png)
-4. Use the "External Editor" drop-down menu, and choose the editor you want to set as your default.
-  ![The External editor menu in the Preferences menu bar](/assets/images/help/desktop/mac-editor-menu.png)
+  ![Screenshot of the "Preferences" window. In the left sidebar, the "Integrations" option is highlighted in blue and outlined in orange.](/assets/images/help/desktop/mac-select-integrations-pane.png)
+4. Under "External Editor", use the dropdown menu to select the editor you want to set as your default.
 5. Click **Save**.  
 
 {% endmac %}

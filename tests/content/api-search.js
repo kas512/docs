@@ -24,7 +24,7 @@ if (!process.env.ELASTICSEARCH_URL) {
 }
 
 // This suite only runs if $ELASTICSEARCH_URL is set.
-describeIfElasticsearchURL('search middleware', () => {
+describeIfElasticsearchURL('search v1 middleware', () => {
   jest.setTimeout(60 * 1000)
 
   test('basic search', async () => {
@@ -56,13 +56,19 @@ describeIfElasticsearchURL('search middleware', () => {
     expect(hit.url).toBe('/en/foo')
     expect(hit.title).toBe('Foo')
     expect(hit.breadcrumbs).toBe('fooing')
+    // By default, 'title' and 'content' is included in highlights,
+    // but not 'headings'
     expect(hit.highlights.title[0]).toBe('<mark>Foo</mark>')
     expect(hit.highlights.content[0]).toMatch('<mark>foo</mark>')
+    expect(hit.highlights.headings).toBeUndefined()
 
     // Check that it can be cached at the CDN
     expect(res.headers['set-cookie']).toBeUndefined()
     expect(res.headers['cache-control']).toContain('public')
-    expect(res.headers['cache-control']).toMatch(/max-age=\d+/)
+    expect(res.headers['cache-control']).toMatch(/max-age=[1-9]/)
+    expect(res.headers['surrogate-control']).toContain('public')
+    expect(res.headers['surrogate-control']).toMatch(/max-age=[1-9]/)
+    expect(res.headers['surrogate-key']).toBe('api-search:en')
   })
 
   test('debug search', async () => {
@@ -79,6 +85,36 @@ describeIfElasticsearchURL('search middleware', () => {
     expect(hit.es_url).toBeTruthy()
   })
 
+  test('search with and without autocomplete on', async () => {
+    // *Without* autocomplete=true
+    {
+      const sp = new URLSearchParams()
+      sp.set('query', 'sill')
+      const res = await get('/api/search/v1?' + sp)
+      expect(res.statusCode).toBe(200)
+      const results = JSON.parse(res.text)
+      // Fixtures contains no word called 'sill'. It does contain the term
+      // 'silly' which, in English, becomes 'silli` when stemmed.
+      // Because we don't use `&autocomplete=true` this time, we expect
+      // to find nothing.
+      expect(results.meta.found.value).toBe(0)
+    }
+
+    // *With* autocomplete=true
+    {
+      const sp = new URLSearchParams()
+      sp.set('query', 'sill')
+      sp.set('autocomplete', 'true')
+      const res = await get('/api/search/v1?' + sp)
+      expect(res.statusCode).toBe(200)
+      const results = JSON.parse(res.text)
+      expect(results.meta.found.value).toBeGreaterThanOrEqual(1)
+      const hit = results.hits[0]
+      const contentHighlights = hit.highlights.content
+      expect(contentHighlights[0]).toMatch('<mark>silly</mark>')
+    }
+  })
+
   test('find nothing', async () => {
     const sp = new URLSearchParams()
     sp.set('query', 'xojixjoiwejhfoiuwehjfioweufhj')
@@ -87,6 +123,38 @@ describeIfElasticsearchURL('search middleware', () => {
     const results = JSON.parse(res.text)
     expect(results.hits.length).toBe(0)
     expect(results.meta.found.value).toBe(0)
+  })
+
+  test('configurable highlights', async () => {
+    const sp = new URLSearchParams()
+    sp.set('query', 'introduction heading')
+    sp.append('highlights', 'headings')
+    sp.append('highlights', 'content')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(200)
+    const results = JSON.parse(res.text)
+    expect(results.meta.found.value).toBeGreaterThanOrEqual(1)
+    for (const hit of results.hits) {
+      expect(hit.highlights.title).toBeFalsy()
+      expect(hit.highlights.headings).toBeTruthy()
+      expect(hit.highlights.content).toBeTruthy()
+    }
+  })
+
+  test('highlights keys matches highlights configuration', async () => {
+    const sp = new URLSearchParams()
+    // This will match because it's in the 'content' but not in 'headings'
+    sp.set('query', 'Fact of life')
+    sp.set('highlights', 'headings')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(200)
+    const results = JSON.parse(res.text)
+    expect(results.meta.found.value).toBeGreaterThanOrEqual(1)
+    for (const hit of results.hits) {
+      expect(hit.highlights.headings).toBeTruthy()
+      expect(hit.highlights.title).toBeFalsy()
+      expect(hit.highlights.content).toBeFalsy()
+    }
   })
 
   test('version can be aliased', async () => {
@@ -144,7 +212,8 @@ describeIfElasticsearchURL('search middleware', () => {
       sp.set('version', 'xxxxx')
       const res = await get('/api/search/v1?' + sp)
       expect(res.statusCode).toBe(400)
-      expect(JSON.parse(res.text).error).toMatch('version')
+      expect(JSON.parse(res.text).error).toMatch("'xxxxx'")
+      expect(JSON.parse(res.text).field).toMatch('version')
     }
     // unrecognized size
     {
@@ -164,5 +233,75 @@ describeIfElasticsearchURL('search middleware', () => {
       expect(res.statusCode).toBe(400)
       expect(JSON.parse(res.text).error).toMatch('sort')
     }
+    // unrecognized highlights
+    {
+      const sp = new URLSearchParams()
+      sp.set('query', 'test')
+      sp.set('highlights', 'neverheardof')
+      const res = await get('/api/search/v1?' + sp)
+      expect(res.statusCode).toBe(400)
+      expect(JSON.parse(res.text).error).toMatch('neverheardof')
+    }
+  })
+
+  test('breadcrumbless records should always return a string', async () => {
+    const sp = new URLSearchParams()
+    sp.set('query', 'breadcrumbs')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(200)
+    const results = JSON.parse(res.text)
+    // safe because we know exactly the fixtures
+    const hit = results.hits[0]
+    expect(hit.breadcrumbs).toBe('')
+  })
+})
+
+describeIfElasticsearchURL("additional fields with 'include'", () => {
+  jest.setTimeout(60 * 1000)
+
+  test("'intro' and 'headings' are omitted by default", async () => {
+    const sp = new URLSearchParams()
+    sp.set('query', 'foo')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(200)
+    const results = JSON.parse(res.text)
+    const firstKeys = Object.keys(results.hits[0])
+    expect(firstKeys.includes('intro')).toBeFalsy()
+    expect(firstKeys.includes('headings')).toBeFalsy()
+  })
+
+  test("additionally include 'intro'", async () => {
+    const sp = new URLSearchParams()
+    sp.set('query', 'foo')
+    sp.set('include', 'intro')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(200)
+    const results = JSON.parse(res.text)
+    const firstKeys = Object.keys(results.hits[0])
+    expect(firstKeys.includes('intro')).toBeTruthy()
+    expect(firstKeys.includes('headings')).toBeFalsy()
+  })
+
+  test("additionally include 'intro' and 'headings'", async () => {
+    const sp = new URLSearchParams()
+    sp.set('query', 'foo')
+    sp.append('include', 'intro')
+    sp.append('include', 'headings')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(200)
+    const results = JSON.parse(res.text)
+    const firstKeys = Object.keys(results.hits[0])
+    expect(firstKeys.includes('intro')).toBeTruthy()
+    expect(firstKeys.includes('headings')).toBeTruthy()
+  })
+
+  test("unknown 'include' is 400 bad request", async () => {
+    const sp = new URLSearchParams()
+    sp.set('query', 'foo')
+    sp.set('include', 'xxxxx')
+    const res = await get('/api/search/v1?' + sp)
+    expect(res.statusCode).toBe(400)
+    const results = JSON.parse(res.text)
+    expect(results.error).toMatch(`Not a valid value (["xxxxx"]) for key 'include'`)
   })
 })

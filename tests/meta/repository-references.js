@@ -15,7 +15,9 @@ If this test is failing...
     add the file name to ALLOW_DOCS_PATHS.
 */
 
-// These are a list of known public repositories in the GitHub organization
+// These are a list of known public repositories in the GitHub organization.
+// The names below on their own, plus the same names ending with '.git', will be accepted.
+// Do not include '.git' in the names below.
 const PUBLIC_REPOS = new Set([
   'actions-oidc-gateway-example',
   'advisory-database',
@@ -27,8 +29,8 @@ const PUBLIC_REPOS = new Set([
   'codeql-cli-binaries',
   'codeql-go',
   'codeql',
-  'codeql',
   'codespaces-precache',
+  'codespaces-jupyter',
   'copilot.vim',
   'dependency-submission-toolkit',
   'dmca',
@@ -37,13 +39,13 @@ const PUBLIC_REPOS = new Set([
   'explore',
   'feedback',
   'gh-net',
+  'gh-actions-importer',
   'git-lfs',
   'git-sizer',
   'github-services',
   'gitignore',
   'gov-takedowns',
   'haikus-for-codespaces',
-  'hello-world.git',
   'hello-world',
   'help-docs-archived-enterprise-versions',
   'hubot',
@@ -58,12 +60,16 @@ const PUBLIC_REPOS = new Set([
   'roadmap',
   'securitylab',
   'semantic',
+  'ssh_data',
   'site-policy',
   'smimesign',
   'stack-graphs',
   'super-linter',
   'tweetsodium',
   'VisualStudio',
+  'codespaces-getting-started-ml',
+  'dependabot-action',
+  'gh-migration-analyzer',
 ])
 
 const ALLOW_DOCS_PATHS = [
@@ -71,17 +77,19 @@ const ALLOW_DOCS_PATHS = [
   '.github/review-template.md',
   '.github/workflows/hubber-contribution-help.yml',
   '.github/workflows/sync-search-indices.yml',
+  '.github/workflows/site-policy-reminder.yml',
   'contributing/search.md',
   'docs/index.yaml',
   'lib/excluded-links.js',
-  'lib/rest/**/*.json',
-  'lib/webhooks/**/*.json',
   'ownership.yaml',
   'script/README.md',
   'script/toggle-ghae-feature-flags.js',
+  'script/i18n/clone-translations.sh',
 ]
 
-const REPO_REGEXP = /\/\/github\.com\/github\/(?!docs[/'"\n])([\w-.]+)/gi
+// This regexp will capture the last segment of a GitHub repo name.
+// E.g., it will capture `backup-utils.git` from `https://github.com/github/backup-utils.git`.
+const REPO_REGEXP = /\/\/github\.com\/github\/([\w\-.]+)/gi
 
 const IGNORE_PATHS = [
   '.git',
@@ -103,7 +111,7 @@ const IGNORE_PATHS = [
   '.linkinator/full.log', // Only present if you've run linkinator
   'lib/search/popular-pages.json', // used to build search indexes
   'tests/**/*.json',
-
+  'src/**/*.json', // OpenAPI schema files
   'content/early-access', // Not committed to public repository.
   'data/early-access', // Not committed to public repository.
   'data/release-notes', // These include links to many internal issues in Liquid comments.
@@ -129,7 +137,8 @@ describe('check if a GitHub-owned private repository is referenced', () => {
     // the disk I/O is sufficiently small.
     const file = fs.readFileSync(filename, 'utf8')
     const matches = Array.from(file.matchAll(REPO_REGEXP))
-      .map(([, repoName]) => repoName)
+      // The referenced repo may or may not end with '.git', so ignore that extension.
+      .map(([, repoName]) => repoName.replace(/\.git$/, ''))
       .filter((repoName) => !PUBLIC_REPOS.has(repoName))
       .filter((repoName) => {
         return !(

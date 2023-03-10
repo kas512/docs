@@ -26,11 +26,11 @@ This guide explains how to use {% data variables.product.prodname_actions %} to 
 
 On every new push to `main` in your {% data variables.product.company_short %} repository, the {% data variables.product.prodname_actions %} workflow builds and pushes a new container image to Amazon ECR, and then deploys a new task definition to Amazon ECS.
 
-{% ifversion fpt or ghec or ghae-issue-4856 or ghes > 3.4 %}
+{% ifversion fpt or ghec or ghes > 3.4 %}
 
 {% note %}
 
-**Note**: {% data reusables.actions.about-oidc-short-overview %} and ["Configuring OpenID Connect in Amazon Web Services"](/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services).
+**Note**: {% data reusables.actions.about-oidc-short-overview %} and "[AUTOTITLE](/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)."
 
 {% endnote %}
 
@@ -74,7 +74,7 @@ Before creating your {% data variables.product.prodname_actions %} workflow, you
 
 4. Create {% data variables.product.prodname_actions %} secrets named `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to store the values for your Amazon IAM access key.
 
-   For more information on creating secrets for {% data variables.product.prodname_actions %}, see "[Encrypted secrets](/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository)."
+   For more information on creating secrets for {% data variables.product.prodname_actions %}, see "[AUTOTITLE](/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository)."
 
    See the documentation for each action used below for the recommended IAM policies for the IAM user, and methods for handling the access key credentials.
 
@@ -143,8 +143,12 @@ jobs:
           # push it to ECR so that it can
           # be deployed to ECS.
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG{% endraw %}
+{%- ifversion actions-save-state-set-output-envs %}
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+{%- else %}
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+{%- endif %}{% raw %}
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
